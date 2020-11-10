@@ -1,0 +1,52 @@
+from datetime import datetime, timezone
+
+from db import db
+
+from sqlalchemy.exc import IntegrityError
+
+
+class UserModel(db.Model):
+    __tablename__ = "users"
+
+    _id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(70), default="Awesome User")
+    role = db.Column(db.String(30), default="user")
+    username = db.Column(db.String(70), nullable=False, unique=True)
+    email = db.Column(db.String(70), nullable=False, unique=True)
+    password = db.Column(db.String(150), nullable=False)
+    activated = db.Column(db.Boolean, default=False)
+    joined = db.Column(db.DateTime(), default=datetime.now(timezone.utc))
+
+    @classmethod
+    def find_by_username(cls, username: str) -> "UserModel":
+        return cls.query.filter_by(username=username).first()
+
+    @classmethod
+    def find_by_id(cls, user_id: str) -> "UserModel":
+        return cls.\
+            query.\
+            filter_by(_id=user_id).\
+            with_entities(cls._id, cls.name, cls.role, cls.username, cls.email, cls.activated, cls.joined).\
+            first()
+
+    @classmethod
+    def find_by_email(cls, email: str) -> "UserModel":
+        return cls.query.filter_by(email=email).first()
+
+    def save_to_db(self) -> str or None:
+        try:
+            db.session.add(self)
+            db.session.commit()
+            return self._id
+        except IntegrityError as error:
+            print(f"[Save User]: {error}")
+            db.session.rollback()
+
+    def delete_from_db(self) -> 'sqlalchemy.exc.IntegrityError' or None:
+        try:
+            db.session.delete(self)
+            db.session.commit()
+        except IntegrityError as error:
+            print(f"[Delete User]: {error}")
+            db.session.rollback()
+            return error
