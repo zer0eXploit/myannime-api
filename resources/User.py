@@ -22,12 +22,12 @@ USERNAME_EXISTS = "A user with that username already exists. Please use another.
 EMAIL_EXISTS = "A user with that email is already registered. Please use another."
 INACTIVE_ACCOUNT = "Your account is not active yet. Please check your email to activate your account."
 INVALID_CONFIRMATION_TOKEN = "The verification string is either invalid or expired. Please request a new activation email."
-REQUEST_NEW_ACTIVATION_EMAIL_URL = "http://{domain_name}/v1/user/resend_activation_email?email={email}"
+REQUEST_NEW_ACTIVATION_EMAIL_URL = "{domain_name}/v1/user/resend_activation_email?email={email}"
 ACCOUNT_CONFIRMED = "Thanks for confirming. You may now start to use your account."
 EMAIL_NOT_FOUND = "The email you want to confirm does not match our records."
 INCOMPLETE_DATA = "Required data are not present."
 ACTIVATION_EMAIL_SENT = "An activation email has been sent to your email address."
-ACTIVATION_EMAIL_RESENT = "An email will be sent to the address you provided if it was registered before and was not actived."
+ACTIVATION_EMAIL_RESENT = "An email will be sent to the address you provided if it was registered before and was not activated."
 
 domain_name = os.environ.get("DOMAIN_NAME")
 
