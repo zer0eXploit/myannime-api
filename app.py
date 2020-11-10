@@ -99,10 +99,10 @@ if __name__ == "__main__":
     db.init_app(app)
     ma.init_app(app)
 
-    if app.config["DEBUG"]:
-        @app.before_first_request
-        def create_tables():
-            # db.drop_all()
-            db.create_all()
+    # if app.config["DEBUG"]:
+    # @app.before_first_request
+    # def create_tables():
+    #     # db.drop_all()
+    #     db.create_all()
 
     app.run(port=5000, debug=True)
