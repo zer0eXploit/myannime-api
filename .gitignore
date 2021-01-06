@@ -1,2 +1,5 @@
 .env
 __pycache__/
+
+static/images/admin_avatars
+static/images/avatars
