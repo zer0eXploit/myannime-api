@@ -4,7 +4,9 @@ from flask import Flask, request, jsonify, send_from_directory
 import logging
 from flask_restful import Api
 from flask_jwt_extended import JWTManager
+from flask_uploads import configure_uploads, patch_request_class
 from flask_cors import CORS
+from werkzeug.utils import secure_filename
 
 from db import db
 from ma import ma
@@ -16,15 +18,18 @@ from resources.Genre import GenreInfo, Genres
 from resources.Admin import GetAdmin as Admin, CreateAdmin
 from resources.AuthToken import RequestToken
 from resources.User import Login, Register, Activate, ResendActivationEmail
+from resources.Image import ImageUpload, Image, Avatar
 from resources.Loader_io import Loader
 
+from helpers.image_helper import IMAGE_SET
+
 app = Flask(__name__)
-cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DB_URI")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET")
 app.config["DEBUG"] = True
+app.config["UPLOADED_IMAGES_DEST"] = os.path.join("static", "images")
 app.secret_key = os.environ.get("APP_SECRET")
 
 
@@ -43,6 +48,12 @@ def page_not_found(e):
     return jsonify(response), 404
 
 
+cors = CORS(app, resources={r"/*": {"origins": "*"}})
+
+# only call these two lines after setting uploaded_images_dest config.
+patch_request_class(app, 10 * 1024 * 1024)  # 10MB upload limit
+configure_uploads(app, IMAGE_SET)
+#  end
 api = Api(app)
 jwt = JWTManager(app)
 
@@ -92,6 +103,9 @@ api.add_resource(Login, "/v1/user/login")
 api.add_resource(Register, "/v1/user/register")
 api.add_resource(Activate, "/v1/user/activate")
 api.add_resource(ResendActivationEmail, "/v1/user/resend_activation_email")
+api.add_resource(ImageUpload, "/v1/upload/image")
+api.add_resource(Image, "/v1/image/<string:filename>")
+api.add_resource(Avatar, "/v1/user/avatar")
 api.add_resource(Loader, "/loaderio-b8a35b9227646ad0cb661aa0a227f084/")
 
 
