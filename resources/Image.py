@@ -3,7 +3,7 @@ import traceback
 from flask_restful import Resource
 from flask_uploads import UploadNotAllowed
 from flask import request, send_file
-from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt_claims
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt_claims, jwt_optional
 from marshmallow import ValidationError
 
 from helpers import image_helper
@@ -26,7 +26,6 @@ AVATAR_UPLOADED = "Avatar uploaded."
 def authorized():
     '''Checks if admin or not.'''
     role = get_jwt_claims().get("role", None)
-    print(role)
     return role is not None
 
 
@@ -134,10 +133,10 @@ class Image(Resource):
 
 class Avatar(Resource):
     @classmethod
-    @jwt_required
-    def get(cls):
+    @jwt_optional
+    def get(cls, username: str):
         try:
-            filename = f'user_{get_jwt_identity()}'
+            filename = f'user_{username}'
             folder = 'avatars' if not authorized() else 'admin_avatars'
             avatar_path = image_helper.find_image_any_format(filename, folder)
             if avatar_path:
