@@ -105,7 +105,7 @@ api.add_resource(Activate, "/v1/user/activate")
 api.add_resource(ResendActivationEmail, "/v1/user/resend_activation_email")
 api.add_resource(ImageUpload, "/v1/upload/image")
 api.add_resource(Image, "/v1/image/<string:filename>")
-api.add_resource(Avatar, "/v1/user/avatar")
+api.add_resource(Avatar, "/v1/user/avatar/<string:username>")
 api.add_resource(Loader, "/loaderio-b8a35b9227646ad0cb661aa0a227f084/")
 
 
