@@ -131,7 +131,7 @@ class Image(Resource):
             return {"message": IMAGE_DELETE_FAILED}, 500
 
 
-class Avatar(Resource):
+class AvatarGET(Resource):
     @classmethod
     @jwt_optional
     def get(cls, username: str):
@@ -157,6 +157,8 @@ class Avatar(Resource):
                 "message": SERVER_ERROR
             }, 500
 
+
+class AvatarPUT(Resource):
     @classmethod
     @jwt_required
     def put(cls):
