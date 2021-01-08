@@ -7,9 +7,16 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt_claims, j
 from marshmallow import ValidationError
 
 from helpers import image_helper
+from helpers.sirv import Sirv
 from schemas.Image import ImageSchema
 
 image_schema = ImageSchema()
+
+# Sirv setup
+client_id = os.environ.get('SIRV_CLIENT_ID', None)
+client_secret = os.environ.get('SIRV_CLIENT_SECRET', None)
+sirv_utils = Sirv(client_id, client_secret)
+SIRV_BASE_FOLDER_NAME = "MYANNime"
 
 INPUT_ERROR = "Error! please check your input(s)."
 IMAGE_UPLOADED = "Image {basename} uploaded."
@@ -47,11 +54,16 @@ class ImageUpload(Resource):
             # request.files = {"form_fild_name" : 'FileStorage' from werkzeug}
             data = image_schema.load(request.files)
             user_id = get_jwt_identity()
-            folder = f'user_{user_id}'  # static/images/user_idxxx
+            folder = f'admin_{user_id}'  # static/images/user_idxxx
             image_path = image_helper.save_image(data['image'], folder=folder)
             basename = image_helper.get_basename(image_path)
+            absolute_path = f'{os.getcwd()}/static/images/{folder}'
+            image_url = sirv_utils.upload(
+                basename, absolute_path, SIRV_BASE_FOLDER_NAME)
+
             return {
-                "message": IMAGE_UPLOADED.format(basename=basename)
+                "message": IMAGE_UPLOADED.format(basename=basename),
+                "image_url": image_url["image_path"]
             }, 201
 
         except UploadNotAllowed:
@@ -63,7 +75,8 @@ class ImageUpload(Resource):
         except ValidationError as error:
             return {"message": INPUT_ERROR, "info": error.messages}, 400
 
-        except:
+        except Exception as ex:
+            print(ex)
             return {
                 "message": SERVER_ERROR
             }, 500
@@ -72,59 +85,25 @@ class ImageUpload(Resource):
 class Image(Resource):
     @classmethod
     @jwt_required
-    def get(cls, filename: str = None):
-        '''
-        Looks for the requested image inside user's folder.
-        '''
-        if not authorized():
-            return {
-                "message": UNAUTHORIZED
-            }, 401
-
-        user_id = get_jwt_identity()
-        folder = f'user_{user_id}'
-        if not image_helper.is_filename_safe(filename):
-            return {
-                "message": ILLEGAL_FILENAME
-            }, 400
-
-        try:
-            return send_file(image_helper.get_path(filename, folder))
-
-        except FileNotFoundError:
-            return {
-                "message": NOT_FOUND
-            }, 404
-
-        except Exception as ex:
-            print(ex)
-            return {"message": SERVER_ERROR}, 500
-
-    @classmethod
-    @jwt_required
     def delete(cls, filename: str):
         if not authorized():
             return {
                 "message": UNAUTHORIZED
             }, 401
 
-        user_id = get_jwt_identity()
-        folder = f'user_{user_id}'
         if not image_helper.is_filename_safe(filename):
             return {
                 "message": ILLEGAL_FILENAME
             }, 400
 
+        user_id = get_jwt_identity()
+        user_folder = f'admin_{user_id}'
+
         try:
-            os.remove(image_helper.get_path(filename, folder))
+            sirv_utils.delete(filename, SIRV_BASE_FOLDER_NAME)
             return {
                 "message": IMAGE_DELETED
-            }, 200
-
-        except FileNotFoundError:
-            return {
-                "message": NOT_FOUND
-            }, 404
+            }
 
         except Exception as ex:
             print(ex)
@@ -135,10 +114,11 @@ class AvatarGET(Resource):
     @classmethod
     @jwt_optional
     def get(cls, username: str):
+        AVATAR_FOLDER = 'Avatars' if not authorized() else 'Admin_avatars'
         try:
             filename = f'user_{username}'
-            folder = 'avatars' if not authorized() else 'admin_avatars'
-            avatar_path = image_helper.find_image_any_format(filename, folder)
+            avatar_path = image_helper.find_image_any_format(
+                filename, AVATAR_FOLDER)
             if avatar_path:
                 try:
                     return send_file(avatar_path)
