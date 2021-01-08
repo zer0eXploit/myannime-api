@@ -114,7 +114,7 @@ class AvatarGET(Resource):
     @classmethod
     @jwt_optional
     def get(cls, username: str):
-        AVATAR_FOLDER = 'Avatars' if not authorized() else 'Admin_avatars'
+        AVATAR_FOLDER = 'avatars' if not authorized() else 'admin_avatars'
         try:
             filename = f'user_{username}'
             avatar_path = image_helper.find_image_any_format(
@@ -153,12 +153,15 @@ class AvatarPUT(Resource):
 
                 except Exception as ex:
                     print(ex)
-                    return {"message": IMAGE_DELETE_FAILED}, 500
+                    return {"message": SERVER_ERROR}, 500
 
             try:
+                absolute_path = f'{os.getcwd()}/static/images/{folder}'
                 ext = image_helper.get_extension(data['image'].filename)
                 avatar = filename + ext
                 image_helper.save_image(data["image"], folder, avatar)
+                image_helper.change_image_type_and_resize(
+                    absolute_path, avatar)
                 return {
                     "message": AVATAR_UPLOADED
                 }, 201
@@ -172,7 +175,8 @@ class AvatarPUT(Resource):
         except ValidationError as error:
             return {"message": INPUT_ERROR, "info": error.messages}, 400
 
-        except:
+        except Exception as ex:
+            print(ex)
             return {
                 "message": SERVER_ERROR
             }, 500

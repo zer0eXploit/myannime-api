@@ -3,6 +3,7 @@ import re
 from typing import Union
 from werkzeug.datastructures import FileStorage
 from flask_uploads import UploadSet, IMAGES
+from PIL import Image
 
 # set name and allowed extensions
 # the image will be saved under static/images/image_name.extension
@@ -66,3 +67,17 @@ def get_extension(file: Union[str, FileStorage]) -> str:
     '''Returns file extension.'''
     filename = _retrieve_filename(file)
     return os.path.splitext(filename)[1]
+
+
+def get_name_without_ext(filename: str) -> str:
+    '''Strips filename from filename.ext'''
+    return os.path.splitext(filename)[0]
+
+
+def change_image_type_and_resize(image_path: str, filename: str) -> None:
+    '''Changes the image type to jpg'''
+    image_path = f'{image_path}/{filename}'
+    image = Image.open(image_path)
+    image.thumbnail((500, 500))
+    image.save(image_path)
+    return None
