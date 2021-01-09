@@ -17,7 +17,7 @@ from resources.Episode_CRUD import GetEpisode, CreateEpisode, EditEpisode
 from resources.Genre import GenreInfo, Genres
 from resources.Admin import GetAdmin as Admin, CreateAdmin
 from resources.AuthToken import RequestToken
-from resources.User import Login, Register, Activate, ResendActivationEmail
+from resources.User import Login, Register, Activate, ResendActivationEmail, RefreshToken
 from resources.Image import ImageUpload, Image, AvatarGET, AvatarPUT
 from resources.Loader_io import Loader
 
@@ -100,6 +100,7 @@ api.add_resource(Admin, "/v1/operators/admin/<int:admin_id>")
 api.add_resource(CreateAdmin, "/v1/operators/admin")
 api.add_resource(RequestToken, "/v1/operators/request_token")
 api.add_resource(Login, "/v1/user/login")
+api.add_resource(RefreshToken, "/v1/user/refresh")
 api.add_resource(Register, "/v1/user/register")
 api.add_resource(Activate, "/v1/user/activate")
 api.add_resource(ResendActivationEmail, "/v1/user/resend_activation_email")

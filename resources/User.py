@@ -4,7 +4,13 @@ import requests
 
 from flask import request
 from flask_restful import Resource
-from flask_jwt_extended import create_access_token, create_refresh_token, decode_token
+from flask_jwt_extended import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    jwt_refresh_token_required,
+    get_jwt_identity
+)
 from werkzeug.security import check_password_hash, generate_password_hash
 from marshmallow.exceptions import ValidationError
 
@@ -102,6 +108,21 @@ class Login(Resource):
 
         except ValidationError as error:
             return {"message": INPUT_ERROR, "info": error.messages}, 400
+
+        except Exception as ex:
+            print(ex)
+            return {"message": SERVER_ERROR}, 500
+
+
+class RefreshToken(Resource):
+    @classmethod
+    @jwt_refresh_token_required
+    def post(cls):
+        try:
+            current_user = get_jwt_identity()
+            return {
+                'access_token': create_access_token(identity=current_user)
+            }, 200
 
         except Exception as ex:
             print(ex)
