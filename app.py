@@ -48,7 +48,7 @@ def page_not_found(e):
     return jsonify(response), 404
 
 
-cors = CORS(app)
+CORS(app)
 
 # only call these two lines after setting uploaded_images_dest config.
 patch_request_class(app, 10 * 1024 * 1024)  # 10MB upload limit
