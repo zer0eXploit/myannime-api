@@ -78,6 +78,8 @@ def change_image_type_and_resize(image_path: str, filename: str) -> None:
     '''Changes the image type to jpg'''
     image_path = f'{image_path}/{filename}'
     image = Image.open(image_path)
-    image.thumbnail((500, 500))
-    image.save(image_path)
+    image.thumbnail((300, 300))
+    w, h = image.size
+    new_im = image.crop((0, 0, w, int(h*0.8)))
+    new_im.save(image_path)
     return None
