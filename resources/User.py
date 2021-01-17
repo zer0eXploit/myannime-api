@@ -9,17 +9,20 @@ from flask_jwt_extended import (
     create_refresh_token,
     decode_token,
     jwt_refresh_token_required,
-    get_jwt_identity
+    get_jwt_identity,
+    jwt_required
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 from marshmallow.exceptions import ValidationError
 
 from models.User import UserModel
 from schemas.Auth import AuthSchema
-from schemas.User import UserSchema
+from schemas.User import UserSchema, SaveUserAnimeSchema, DumpUserInfoSchema
 
 auth_schema = AuthSchema()
 user_info_schema = UserSchema()
+user_anime_save_schema = SaveUserAnimeSchema()
+user_min_info_schema = DumpUserInfoSchema()
 
 INORRECT_CREDENTIALS = "Bad credentials."
 SERVER_ERROR = "Something went wrong on our servers."
@@ -34,6 +37,9 @@ EMAIL_NOT_FOUND = "The email you want to confirm does not match our records."
 INCOMPLETE_DATA = "Required data are not present."
 ACTIVATION_EMAIL_SENT = "An activation email has been sent to your email address."
 ACTIVATION_EMAIL_RESENT = "An email will be sent to the address you provided if it was registered before and was not activated."
+ANIME_SAVED = "Anime saved to user's collection."
+USER_NOT_FOUND = "User not found."
+SAVE_ANIME_FAILED = "Error saving anime."
 
 domain_name = os.environ.get("DOMAIN_NAME")
 
@@ -205,3 +211,65 @@ class ResendActivationEmail(Resource):
             return {"message": ACTIVATION_EMAIL_RESENT}, 200
 
         return {"message": INCOMPLETE_DATA}, 400
+
+
+class UserInfo(Resource):
+    @classmethod
+    @jwt_required
+    def get(cls):
+        username = get_jwt_identity()
+        try:
+            user = UserModel.find_by_username(username)
+            if user:
+                saved_animes = user.saved_animes.\
+                    with_entities("anime_info.anime_id", "anime_info.title", "anime_info.poster_uri").\
+                    order_by("title").all()
+                return {
+                    **user_min_info_schema.dump(user),
+                    "saved_animes": [
+                        {
+                            "title": saved_anime[1],
+                            "anime_id": str(saved_anime[0]),
+                            "poster_uri": saved_anime[2]
+                        } for saved_anime in saved_animes
+                    ]
+                }, 200
+
+            return {
+                "message": USER_NOT_FOUND
+            }, 404
+
+        except Exception as ex:
+            print(ex)
+            return {"message": SERVER_ERROR}, 500
+
+
+class SaveAnime(Resource):
+    @classmethod
+    @jwt_required
+    def post(cls):
+        try:
+            user_id = get_jwt_identity()
+            post_data = user_anime_save_schema.load(request.get_json())
+            user = UserModel.find_by_username(user_id)
+            if user:
+                successful = user.save_anime(post_data['anime_id'])
+                if successful:
+                    return {
+                        "message": ANIME_SAVED
+                    }, 201
+
+                return {
+                    "message": SAVE_ANIME_FAILED
+                }, 400
+
+            return {
+                "message": USER_NOT_FOUND
+            }, 404
+
+        except ValidationError as error:
+            return {"message": INPUT_ERROR, "info": error.messages}, 400
+
+        except Exception as ex:
+            print(ex)
+            return {"message": SERVER_ERROR}, 500
