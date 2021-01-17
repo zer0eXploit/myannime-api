@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
 
 from db import db
-
+from models.Anime import AnimeModel
+from models.UserAnimes import user_animes
 from sqlalchemy.exc import IntegrityError
 
 
@@ -16,6 +17,12 @@ class UserModel(db.Model):
     password = db.Column(db.String(150), nullable=False)
     activated = db.Column(db.Boolean, default=False)
     joined = db.Column(db.DateTime(), default=datetime.now(timezone.utc))
+    saved_animes = db.relationship(
+        AnimeModel,
+        secondary=user_animes,
+        backref=db.backref('users'),
+        lazy='dynamic',
+    )
 
     @classmethod
     def find_by_username(cls, username: str) -> "UserModel":
@@ -32,6 +39,16 @@ class UserModel(db.Model):
     @classmethod
     def find_by_email(cls, email: str) -> "UserModel":
         return cls.query.filter_by(email=email).first()
+
+    def save_anime(self, anime_id: str) -> bool:
+        '''Saves an anime to user's collection.'''
+        anime = AnimeModel.find_by_id(anime_id)
+        if anime:
+            self.saved_animes.append(anime)
+            db.session.add(self)
+            db.session.commit()
+            return True
+        return False
 
     def save_to_db(self) -> str or None:
         try:
