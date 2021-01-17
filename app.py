@@ -18,7 +18,15 @@ from resources.Episode_CRUD import GetEpisode, CreateEpisode, EditEpisode
 from resources.Genre import GenreInfo, Genres
 from resources.Admin import GetAdmin as Admin, CreateAdmin
 from resources.AuthToken import RequestToken
-from resources.User import Login, Register, Activate, ResendActivationEmail, RefreshToken
+from resources.User import (
+    Login,
+    Register,
+    Activate,
+    ResendActivationEmail,
+    RefreshToken,
+    SaveAnime,
+    UserInfo
+)
 from resources.Image import ImageUpload, Image, AvatarGET, AvatarPUT
 from resources.Loader_io import Loader
 
@@ -107,10 +115,11 @@ api.add_resource(Activate, "/v1/user/activate")
 api.add_resource(ResendActivationEmail, "/v1/user/resend_activation_email")
 api.add_resource(ImageUpload, "/v1/upload/image")
 api.add_resource(Image, "/v1/image/<string:filename>")
+api.add_resource(UserInfo, "/v1/user/info")
 api.add_resource(AvatarGET, "/v1/user/avatar/<string:username>")
 api.add_resource(AvatarPUT, "/v1/user/avatar")
+api.add_resource(SaveAnime, "/v1/user/save_anime")
 api.add_resource(Loader, "/loaderio-b8a35b9227646ad0cb661aa0a227f084/")
-
 
 if __name__ == "__main__":
     db.init_app(app)
