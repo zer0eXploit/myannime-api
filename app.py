@@ -5,6 +5,7 @@ import logging
 from flask_restful import Api
 from flask_jwt_extended import JWTManager
 from flask_uploads import configure_uploads, patch_request_class
+from flask_migrate import Migrate
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
@@ -49,7 +50,7 @@ def page_not_found(e):
 
 
 CORS(app)
-
+migrate = Migrate(app, db)
 # only call these two lines after setting uploaded_images_dest config.
 patch_request_class(app, 10 * 1024 * 1024)  # 10MB upload limit
 configure_uploads(app, IMAGE_SET)
