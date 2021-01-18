@@ -55,6 +55,21 @@ class UserModel(db.Model):
             db.session.rollback()
             return False
 
+    def remove_anime(self, anime_id: str) -> bool:
+        '''Removes an anime from user's collection.'''
+        try:
+            anime = AnimeModel.find_by_id(anime_id)
+            if anime:
+                self.saved_animes.remove(anime)
+                db.session.add(self)
+                db.session.commit()
+                return True
+            return False
+        except Exception as ex:
+            print(ex)
+            db.session.rollback()
+            return False
+
     def save_to_db(self) -> str or None:
         try:
             db.session.add(self)
