@@ -2,9 +2,10 @@ from typing import Dict
 from flask_restful import Resource
 from flask import request
 from marshmallow.exceptions import ValidationError
-from flask_jwt_extended import jwt_required, get_jwt_claims
+from flask_jwt_extended import jwt_required, get_jwt_claims, jwt_optional, get_jwt_identity
 
 from models.Anime import AnimeModel
+from models.User import UserModel
 
 from helpers.check_uuid import valid_uuid4
 
@@ -30,12 +31,22 @@ FORBIDDEN = "You don't have access to the requested resource. That's all we know
 
 class GetAnime(Resource):
     @classmethod
+    @jwt_optional
     def get(cls, anime_id):
         if not valid_uuid4(anime_id):
             response = {"message": UUID_ERROR}
             return response, 400
 
         anime = AnimeModel.find_by_id(anime_id)
+        username = get_jwt_identity()
+        anime_bookmarked = False
+
+        if username:  # if there is an authenticated user
+            # get the user and check if he saved the anime
+            user = UserModel.find_by_username(username)
+            if user.has_user_saved_anime(anime_id):
+                anime_bookmarked = True
+
         if anime:
             episodes = anime.\
                 episodes.\
@@ -44,6 +55,7 @@ class GetAnime(Resource):
 
             anime_data = {
                 **anime_info_schema.dump(anime),
+                "anime_bookmarked": anime_bookmarked,
                 "episodes": episode_schema.dump(episodes)
             }
             return anime_data, 200
