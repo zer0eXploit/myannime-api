@@ -40,6 +40,8 @@ ACTIVATION_EMAIL_RESENT = "An email will be sent to the address you provided if 
 ANIME_SAVED = "Anime saved to user's collection."
 USER_NOT_FOUND = "User not found."
 SAVE_ANIME_FAILED = "Error saving anime."
+ANIME_REMOVED = "Successfully removed anime."
+REMOVE_ANIME_FAILED = "Error removing anime."
 
 domain_name = os.environ.get("DOMAIN_NAME")
 
@@ -261,6 +263,35 @@ class SaveAnime(Resource):
 
                 return {
                     "message": SAVE_ANIME_FAILED
+                }, 400
+
+            return {
+                "message": USER_NOT_FOUND
+            }, 404
+
+        except ValidationError as error:
+            return {"message": INPUT_ERROR, "info": error.messages}, 400
+
+        except Exception as ex:
+            print(ex)
+            return {"message": SERVER_ERROR}, 500
+
+    @classmethod
+    @jwt_required
+    def delete(cls):
+        try:
+            user_id = get_jwt_identity()
+            data = user_anime_save_schema.load(request.get_json())
+            user = UserModel.find_by_username(user_id)
+            if user:
+                successful = user.remove_anime(data['anime_id'])
+                if successful:
+                    return {
+                        "message": ANIME_REMOVED
+                    }, 200
+
+                return {
+                    "message": REMOVE_ANIME_FAILED
                 }, 400
 
             return {
