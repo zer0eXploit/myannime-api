@@ -42,13 +42,18 @@ class UserModel(db.Model):
 
     def save_anime(self, anime_id: str) -> bool:
         '''Saves an anime to user's collection.'''
-        anime = AnimeModel.find_by_id(anime_id)
-        if anime:
-            self.saved_animes.append(anime)
-            db.session.add(self)
-            db.session.commit()
-            return True
-        return False
+        try:
+            anime = AnimeModel.find_by_id(anime_id)
+            if anime:
+                self.saved_animes.append(anime)
+                db.session.add(self)
+                db.session.commit()
+                return True
+            return False
+        except Exception as ex:
+            print(ex)
+            db.session.rollback()
+            return False
 
     def save_to_db(self) -> str or None:
         try:
