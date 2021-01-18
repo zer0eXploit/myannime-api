@@ -130,9 +130,15 @@ class RefreshToken(Resource):
     def post(cls):
         try:
             current_user = get_jwt_identity()
+            user = UserModel.find_by_username(current_user)
+            if user:
+                return {
+                    'access_token': create_access_token(identity=user)
+                }, 200
+
             return {
-                'access_token': create_access_token(identity=current_user)
-            }, 200
+                'message': USER_NOT_FOUND
+            }, 404
 
         except Exception as ex:
             print(ex)
