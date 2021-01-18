@@ -70,6 +70,15 @@ class UserModel(db.Model):
             db.session.rollback()
             return False
 
+    def has_user_saved_anime(self, anime_id: str) -> None or 'AnimeModel':
+        '''Checks if an anime is in user's collection.'''
+        try:
+            anime = self.saved_animes.filter_by(anime_id=anime_id).first()
+            return anime
+        except Exception as ex:
+            print(ex)
+            return None
+
     def save_to_db(self) -> str or None:
         try:
             db.session.add(self)
