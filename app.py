@@ -88,7 +88,7 @@ def user_identity_lookup(user):
 def get():
     icon_path = os.path.join(app.root_path, "static/images")
     mimetype = "image/vnd.microsoft.icon"
-    icon_name = "fav.png"
+    icon_name = "favicon.ico"
 
     return send_from_directory(icon_path, icon_name, mimetype=mimetype)
 
