@@ -1,7 +1,6 @@
 import os
 
 from flask import Flask, request, jsonify, send_from_directory
-import logging
 from flask_restful import Api
 from flask_jwt_extended import JWTManager
 from flask_uploads import configure_uploads, patch_request_class
@@ -46,13 +45,12 @@ app.secret_key = os.environ.get("APP_SECRET")
 def page_not_found(e):
     MESSAGE_ONE = "The requested resource is not found on this server."
     MESSAGE_TWO = "If it is something that should exist, please contact us."
-    url = request.url
-
-    logging.basicConfig(format="%(message)s")
-    print("=====")
-    logging.warning(f"\n404: {url}\n")
-    print("=====")
-    response = {"message_one": MESSAGE_ONE, "message_two": MESSAGE_TWO}
+    PATH = request.path
+    response = {
+        "message_one": MESSAGE_ONE,
+        "message_two": MESSAGE_TWO,
+        "requested_path": PATH
+    }
 
     return jsonify(response), 404
 
