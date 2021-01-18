@@ -42,6 +42,8 @@ USER_NOT_FOUND = "User not found."
 SAVE_ANIME_FAILED = "Error saving anime."
 ANIME_REMOVED = "Successfully removed anime."
 REMOVE_ANIME_FAILED = "Error removing anime."
+ANIME_NOT_SAVED_BEFORE = "The anime is not saved to begin with."
+ANIME_SAVED_BEFORE = "This anime is already saved."
 
 domain_name = os.environ.get("DOMAIN_NAME")
 
@@ -254,8 +256,14 @@ class SaveAnime(Resource):
             user_id = get_jwt_identity()
             post_data = user_anime_save_schema.load(request.get_json())
             user = UserModel.find_by_username(user_id)
+            anime_id = post_data['anime_id']
             if user:
-                successful = user.save_anime(post_data['anime_id'])
+                if user.has_user_saved_anime(anime_id):
+                    return {
+                        "message": ANIME_SAVED_BEFORE
+                    }, 400
+
+                successful = user.save_anime(anime_id)
                 if successful:
                     return {
                         "message": ANIME_SAVED
@@ -283,16 +291,22 @@ class SaveAnime(Resource):
             user_id = get_jwt_identity()
             data = user_anime_save_schema.load(request.get_json())
             user = UserModel.find_by_username(user_id)
+            anime_id = data['anime_id']
             if user:
-                successful = user.remove_anime(data['anime_id'])
-                if successful:
+                if user.has_user_saved_anime(anime_id):
+                    successful = user.remove_anime(anime_id)
+                    if successful:
+                        return {
+                            "message": ANIME_REMOVED
+                        }, 200
+
                     return {
-                        "message": ANIME_REMOVED
-                    }, 200
+                        "message": REMOVE_ANIME_FAILED
+                    }, 400
 
                 return {
-                    "message": REMOVE_ANIME_FAILED
-                }, 400
+                    "message": ANIME_NOT_SAVED_BEFORE
+                }, 404
 
             return {
                 "message": USER_NOT_FOUND
