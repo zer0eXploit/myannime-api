@@ -19,6 +19,8 @@ from models.User import UserModel
 from schemas.Auth import AuthSchema
 from schemas.User import UserSchema, SaveUserAnimeSchema, DumpUserInfoSchema
 
+from helpers.send_in_blue import SendInBlue, SendInBlueError
+
 auth_schema = AuthSchema()
 user_info_schema = UserSchema()
 user_anime_save_schema = SaveUserAnimeSchema()
@@ -44,6 +46,7 @@ ANIME_REMOVED = "Successfully removed anime."
 REMOVE_ANIME_FAILED = "Error removing anime."
 ANIME_NOT_SAVED_BEFORE = "The anime is not saved to begin with."
 ANIME_SAVED_BEFORE = "This anime is already saved."
+REGISTERATION_FAILED = "Error registering a new user. Please try again."
 
 domain_name = os.environ.get("DOMAIN_NAME")
 
@@ -55,36 +58,6 @@ def generate_activation_token(user) -> str:
         identity=user, expires_delta=exp_time, user_claims=user_claims)
 
     return confirmation_token
-
-
-def send_activation_email(**kwargs):
-    url = "https://api.sendinblue.com/v3/smtp/email"
-
-    payload = {
-        "sender": {
-            "name": "MyanNime",
-            "email": "noreply@myannime.com"
-        },
-        "to": [
-            {
-                "email": kwargs["email"],
-                "name": kwargs["name"]
-            }
-        ],
-        "params": {
-            "NAME": kwargs["name"],
-            "ACTIVATION_LINK": kwargs["activation_link"]
-        },
-        "templateId": 1
-    }
-    headers = {
-        "accept": "application/json",
-        "content-type": "application/json",
-        "api-key": os.environ.get("SENDINBLUE_API_KEY")
-    }
-
-    response = requests.request("POST", url, json=payload, headers=headers)
-    print(response.text)
 
 
 class Login(Resource):
@@ -164,10 +137,18 @@ class Register(Resource):
             if user_id:
                 token = generate_activation_token(new_user)
                 activation_link = f"{domain_name}/v1/user/activate?email={new_user.email}&token={token}"
-                send_activation_email(
-                    name=new_user.name, email=new_user.email, activation_link=activation_link)
+                try:
+                    SendInBlue.send_activation_email(
+                        name=new_user.name,
+                        email=new_user.email,
+                        activation_link=activation_link
+                    )
 
-                return {"message": ACTIVATION_EMAIL_SENT}, 200
+                    return {"message": ACTIVATION_EMAIL_SENT}, 200
+                except SendInBlueError as err:
+                    print(err)
+                    new_user.delete_from_db()
+                    return {"message": REGISTERATION_FAILED}, 500
 
         except ValidationError as error:
             return {"message": INPUT_ERROR, "info": error.messages}, 400
@@ -213,10 +194,17 @@ class ResendActivationEmail(Resource):
             if user and not user.activated:
                 token = generate_activation_token(user)
                 activation_link = f"{domain_name}/v1/user/activate?email={user.email}&token={token}"
-                status_code = send_activation_email(
-                    name=user.name, email=user.email, activation_link=activation_link)
+                try:
+                    SendInBlue.send_activation_email(
+                        name=user.name,
+                        email=user.email,
+                        activation_link=activation_link
+                    )
+                    return {"message": ACTIVATION_EMAIL_RESENT}, 200
 
-                return {"message": ACTIVATION_EMAIL_RESENT}, 200
+                except SendInBlueError as err:
+                    print(err)
+                    return {"message": ACTIVATION_EMAIL_RESENT_FAILED}, 500
 
             return {"message": ACTIVATION_EMAIL_RESENT}, 200
 
