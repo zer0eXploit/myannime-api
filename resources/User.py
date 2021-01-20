@@ -16,6 +16,8 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from marshmallow.exceptions import ValidationError
 
 from models.User import UserModel
+from models.UserConfirmation import ConfirmationModel
+
 from schemas.Auth import AuthSchema
 from schemas.User import UserSchema, SaveUserAnimeSchema, DumpUserInfoSchema
 
@@ -32,13 +34,9 @@ INPUT_ERROR = "Error! please check your input(s)."
 USERNAME_EXISTS = "A user with that username already exists. Please use another."
 EMAIL_EXISTS = "A user with that email is already registered. Please use another."
 INACTIVE_ACCOUNT = "Your account is not active yet. Please check your email to activate your account."
-INVALID_CONFIRMATION_TOKEN = "The verification string is either invalid or expired. Please request a new activation email."
-REQUEST_NEW_ACTIVATION_EMAIL_URL = "{domain_name}/v1/user/resend_activation_email?email={email}"
-ACCOUNT_CONFIRMED = "Thanks for confirming. You may now start to use your account."
-EMAIL_NOT_FOUND = "The email you want to confirm does not match our records."
+INACTIVE_ACCOUNT_MSG_2 = "If you didn't get an activation email, please request a new one."
 INCOMPLETE_DATA = "Required data are not present."
 ACTIVATION_EMAIL_SENT = "An activation email has been sent to your email address."
-ACTIVATION_EMAIL_RESENT = "An email will be sent to the address you provided if it was registered before and was not activated."
 ANIME_SAVED = "Anime saved to user's collection."
 USER_NOT_FOUND = "User not found."
 SAVE_ANIME_FAILED = "Error saving anime."
@@ -48,16 +46,7 @@ ANIME_NOT_SAVED_BEFORE = "The anime is not saved to begin with."
 ANIME_SAVED_BEFORE = "This anime is already saved."
 REGISTERATION_FAILED = "Error registering a new user. Please try again."
 
-domain_name = os.environ.get("DOMAIN_NAME")
-
-
-def generate_activation_token(user) -> str:
-    exp_time = datetime.timedelta(hours=5)
-    user_claims = {"email": user.email}
-    confirmation_token = create_access_token(
-        identity=user, expires_delta=exp_time, user_claims=user_claims)
-
-    return confirmation_token
+DOMAIN_NAME = os.environ.get("DOMAIN_NAME")
 
 
 class Login(Resource):
@@ -70,8 +59,18 @@ class Login(Resource):
 
             user = UserModel.find_by_username(username)
             if user and check_password_hash(user.password, password):
-                if not user.activated:
-                    return {"message": INACTIVE_ACCOUNT}, 403
+                if user.last_confirmation is None:
+                    return {
+                        "message_1": INACTIVE_ACCOUNT,
+                        "message_2": INACTIVE_ACCOUNT_MSG_2
+                    }, 403
+
+                activated = user.last_confirmation.confirmed
+                if not activated or user.last_confirmation is None:
+                    return {
+                        "message_1": INACTIVE_ACCOUNT,
+                        "message_2": INACTIVE_ACCOUNT_MSG_2
+                    }, 403
 
                 exp_time = datetime.timedelta(hours=3)
                 access_token = create_access_token(
@@ -134,9 +133,11 @@ class Register(Resource):
 
             new_user = UserModel(**user_info)
             user_id = new_user.save_to_db()
+            confirmation = ConfirmationModel(user_id)
+            confirmation.save_to_db()
             if user_id:
-                token = generate_activation_token(new_user)
-                activation_link = f"{domain_name}/v1/user/activate?email={new_user.email}&token={token}"
+                token = confirmation.confirmation_id
+                activation_link = f"{DOMAIN_NAME}/v1/user/activate?token={token}"
                 try:
                     SendInBlue.send_activation_email(
                         name=new_user.name,
@@ -148,6 +149,7 @@ class Register(Resource):
                 except SendInBlueError as err:
                     print(err)
                     new_user.delete_from_db()
+                    confirmation.delete_from_db()
                     return {"message": REGISTERATION_FAILED}, 500
 
         except ValidationError as error:
@@ -155,60 +157,9 @@ class Register(Resource):
 
         except Exception as ex:
             print(ex)
+            confirmation.delete_from_db()
+            new_user.delete_from_db()
             return {"message": SERVER_ERROR}, 500
-
-
-class Activate(Resource):
-    @classmethod
-    def get(cls):
-        token = request.args.get("token", None)
-        email = request.args.get("email", None)
-        if token and email:
-            try:
-                decoded = decode_token(token)
-                if email and email == decoded.get("user_claims")["email"]:
-                    user = UserModel.find_by_email(email)
-                    if user and not user.activated:
-                        user.activated = True
-                        user.save_to_db()
-                        print(user.activated)
-                        return {"message": ACCOUNT_CONFIRMED}, 200
-
-                return {"message": EMAIL_NOT_FOUND}, 404
-
-            except:
-                return {
-                    "message": INVALID_CONFIRMATION_TOKEN,
-                    "request_email_url": REQUEST_NEW_ACTIVATION_EMAIL_URL.format(domain_name=domain_name, email=email)
-                }, 401
-
-        return {"message": INCOMPLETE_DATA}, 400
-
-
-class ResendActivationEmail(Resource):
-    @classmethod
-    def get(cls):
-        email = request.args.get("email", None)
-        if email:
-            user = UserModel.find_by_email(email)
-            if user and not user.activated:
-                token = generate_activation_token(user)
-                activation_link = f"{domain_name}/v1/user/activate?email={user.email}&token={token}"
-                try:
-                    SendInBlue.send_activation_email(
-                        name=user.name,
-                        email=user.email,
-                        activation_link=activation_link
-                    )
-                    return {"message": ACTIVATION_EMAIL_RESENT}, 200
-
-                except SendInBlueError as err:
-                    print(err)
-                    return {"message": ACTIVATION_EMAIL_RESENT_FAILED}, 500
-
-            return {"message": ACTIVATION_EMAIL_RESENT}, 200
-
-        return {"message": INCOMPLETE_DATA}, 400
 
 
 class UserInfo(Resource):
