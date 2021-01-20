@@ -44,14 +44,14 @@ class Login(Resource):
             if user and check_password_hash(user.password, password):
                 if user.last_confirmation is None:
                     return {
-
+                        "message_1": get_text('user_account_not_activated_1'),
                         "message_2": get_text('user_account_not_activated_2')
                     }, 403
 
                 activated = user.last_confirmation.confirmed
-                if not activated or user.last_confirmation is None:
+                if not activated:
                     return {
-
+                        "message_1": get_text('user_account_not_activated_1'),
                         "message_2": get_text('user_account_not_activated_2')
                     }, 403
 
