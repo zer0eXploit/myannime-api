@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from db import db
 from models.Anime import AnimeModel
 from models.UserAnimes import user_animes
+from models.UserConfirmation import ConfirmationModel
 from sqlalchemy.exc import IntegrityError
 
 
@@ -15,7 +16,11 @@ class UserModel(db.Model):
     username = db.Column(db.String(70), nullable=False, unique=True)
     email = db.Column(db.String(70), nullable=False, unique=True)
     password = db.Column(db.String(150), nullable=False)
-    activated = db.Column(db.Boolean, default=False)
+    confirmation = db.relationship(
+        'ConfirmationModel',
+        lazy='dynamic',
+        cascade='all, delete-orphan'
+    )
     joined = db.Column(db.DateTime(), default=datetime.now(timezone.utc))
     saved_animes = db.relationship(
         AnimeModel,
@@ -23,6 +28,11 @@ class UserModel(db.Model):
         backref=db.backref('users'),
         lazy='dynamic',
     )
+
+    @property
+    def last_confirmation(self) -> 'ConfirmationModel':
+        # self.confirmation is alreay a query object because of lazy='dynamic'
+        return self.confirmation.order_by(db.desc(ConfirmationModel.expires_at)).first()
 
     @classmethod
     def find_by_username(cls, username: str) -> "UserModel":
