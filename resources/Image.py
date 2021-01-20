@@ -8,6 +8,8 @@ from marshmallow import ValidationError
 
 from helpers import image_helper
 from helpers.sirv import Sirv
+from helpers.strings import get_text
+
 from schemas.Image import ImageSchema
 
 image_schema = ImageSchema()
@@ -17,17 +19,6 @@ client_id = os.environ.get('SIRV_CLIENT_ID', None)
 client_secret = os.environ.get('SIRV_CLIENT_SECRET', None)
 sirv_utils = Sirv(client_id, client_secret)
 SIRV_BASE_FOLDER_NAME = "MYANNime"
-
-INPUT_ERROR = "Error! please check your input(s)."
-IMAGE_UPLOADED = "Image {basename} uploaded."
-ILLEGAL_UPLOAD = "Illegal file type '{extension}' uploaded."
-SERVER_ERROR = "Something went wrong on our servers."
-ILLEGAL_FILENAME = "Illegal filename requested."
-NOT_FOUND = "File not found."
-IMAGE_DELETE_FAILED = "Failed to delete image."
-IMAGE_DELETED = "Image deleted."
-UNAUTHORIZED = "Unauthorized."
-AVATAR_UPLOADED = "Avatar uploaded."
 
 
 def authorized():
@@ -47,7 +38,7 @@ class ImageUpload(Resource):
         '''
         if not authorized():
             return {
-                "message": UNAUTHORIZED
+                "message": get_text('image_unauthorized')
             }, 401
 
         try:
@@ -62,23 +53,23 @@ class ImageUpload(Resource):
                 basename, absolute_path, SIRV_BASE_FOLDER_NAME)
 
             return {
-                "message": IMAGE_UPLOADED.format(basename=basename),
+                "message": get_text('image_photo_uploaded').format(basename=basename),
                 "image_url": image_url["image_path"]
             }, 201
 
         except UploadNotAllowed:
             extension = image_helper.get_extension(data['image'])
             return {
-                "message": ILLEGAL_UPLOAD.format(extension=extension)
+                "message": get_text('image_illegal_file_type').format(extension=extension)
             }, 400
 
         except ValidationError as error:
-            return {"message": INPUT_ERROR, "info": error.messages}, 400
+            return {"message": get_text('input_error_generic'), "info": error.messages}, 400
 
         except Exception as ex:
             print(ex)
             return {
-                "message": SERVER_ERROR
+
             }, 500
 
 
@@ -88,12 +79,12 @@ class Image(Resource):
     def delete(cls, filename: str):
         if not authorized():
             return {
-                "message": UNAUTHORIZED
+                "message": get_text('image_unauthorized')
             }, 401
 
         if not image_helper.is_filename_safe(filename):
             return {
-                "message": ILLEGAL_FILENAME
+                "message": get_text('image_illegal_file_name')
             }, 400
 
         user_id = get_jwt_identity()
@@ -102,12 +93,12 @@ class Image(Resource):
         try:
             sirv_utils.delete(filename, SIRV_BASE_FOLDER_NAME)
             return {
-                "message": IMAGE_DELETED
+                "message": get_text('image_deletion_successful')
             }
 
         except Exception as ex:
             print(ex)
-            return {"message": IMAGE_DELETE_FAILED}, 500
+            return {"message": get_text('image_deletion_failed')}, 500
 
 
 class AvatarGET(Resource):
@@ -125,16 +116,16 @@ class AvatarGET(Resource):
 
                 except FileNotFoundError:
                     return {
-                        "message": NOT_FOUND
+                        "message": get_text('image_file_not_found')
                     }, 404
 
             return {
-                "message": NOT_FOUND
+                "message": get_text('image_file_not_found')
             }, 404
 
         except:
             return {
-                "message": SERVER_ERROR
+
             }, 500
 
 
@@ -153,7 +144,6 @@ class AvatarPUT(Resource):
 
                 except Exception as ex:
                     print(ex)
-                    return {"message": SERVER_ERROR}, 500
 
             try:
                 absolute_path = f'{os.getcwd()}/static/images/{folder}'
@@ -163,20 +153,20 @@ class AvatarPUT(Resource):
                 image_helper.change_image_type_and_resize(
                     absolute_path, avatar)
                 return {
-                    "message": AVATAR_UPLOADED
+                    "message": get_text('image_avatar_uploaded')
                 }, 201
 
             except UploadNotAllowed:
                 extension = image_helper.get_extension(data['image'])
                 return {
-                    "message": ILLEGAL_UPLOAD.format(extension=extension)
+                    "message": get_text('image_illegal_file_type').format(extension=extension)
                 }, 400
 
         except ValidationError as error:
-            return {"message": INPUT_ERROR, "info": error.messages}, 400
+            return {"message": get_text('input_error_generic'), "info": error.messages}, 400
 
         except Exception as ex:
             print(ex)
             return {
-                "message": SERVER_ERROR
+
             }, 500

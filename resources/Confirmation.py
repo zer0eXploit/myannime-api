@@ -11,20 +11,9 @@ from models.User import UserModel
 from schemas.UserConfirm import ConfirmationSchema
 
 from helpers.send_in_blue import SendInBlue, SendInBlueError
+from helpers.strings import get_text
 
 confirmation_schema = ConfirmationSchema()
-
-CONFIRMED = "Thanks for confirming. Your account is activated."
-ALREADY_CONFIRMED = "This account is already confirmed."
-NOT_FOUND = "Invalid token. Please request a new confirmation link."
-EXPIRED = "Confirmation link expired. Please request a new one."
-USER_NOT_FOUND = "User not found."
-RESEND_ACTIVATION_EMAIL_FAILED = "Error resending activation email."
-SERVER_ERROR = "Something went wrong on our servers."
-RESEND_SUCCESSFUL = "Successfully sent! Please check your email."
-TOKEN_REQUIRED = "Activation token is required."
-USERNAME_REQUIRED = "Please include username in POST body."
-UNAUTHORIZED = "You are not allowed to access this resource. That's all we know."
 
 DOMAIN_NAME = os.environ.get("DOMAIN_NAME")
 
@@ -33,33 +22,35 @@ class Activate(Resource):
     @classmethod
     def get(cls):
         '''Response after successful confirmation or other cases.'''
+        confirmation_id = request.args.get("token", None)
+
         if confirmation_id is None:
             return {
-                "message": TOKEN_REQUIRED
+                "message": get_text('confirmation_activation_token_required')
             }, 400
 
         confirmation = ConfirmationModel.find_by_id(confirmation_id)
 
         if not confirmation:
             return {
-                "message": NOT_FOUND
+                "message": get_text('confirmation_token_not_found')
             }, 404
 
         if confirmation.expired:
             return {
-                "message": EXPIRED
+                "message": get_text('confirmation_token_expired')
             }, 400
 
         if confirmation.confirmed:
             return {
-                "message": ALREADY_CONFIRMED
+                "message": get_text('confirmation_account_already_confirmed')
             }, 400
 
         confirmation.confirmed = True
         confirmation.save_to_db()
 
         return {
-            "message": CONFIRMED
+            "message": get_text('confirmation_account_confirmed')
         }, 200
 
 
@@ -69,17 +60,17 @@ class UserConfirm(Resource):
     def get(cls, username: str):
         '''Get user confirmation. Use for testing.'''
         admin_id = get_jwt_claims().get("admin_id", None)
-        print(get_jwt_claims())
+
         if admin_id is None:
             return {
-                "message": UNAUTHORIZED
+                "message": get_text('confirmation_unauthorized')
             }, 403
 
         user = UserModel.find_by_username(username)
 
         if not user:
             return {
-                "message": USER_NOT_FOUND
+                "message": get_text('confirmation_user_not_found')
             }, 404
 
         return {
@@ -99,7 +90,7 @@ class ResendActivationEmail(Resource):
         username = request.get_json().get("username", None)
         if username is None:
             return {
-                "message": USERNAME_REQUIRED
+                "message": get_text('confirmation_username_required')
             }, 400
 
         user = UserModel.find_by_username(username)
@@ -114,7 +105,7 @@ class ResendActivationEmail(Resource):
             if confirmation:
                 if confirmation.confirmed:
                     return {
-                        "message": ALREADY_CONFIRMED
+                        "message": get_text('confirmation_account_already_confirmed')
                     }, 400
                 confirmation.force_to_expire()
 
@@ -129,16 +120,16 @@ class ResendActivationEmail(Resource):
             )
 
             return {
-                "message": RESEND_SUCCESSFUL
+                "message": get_text('confirmation_resend_activation_email_success')
             }, 200
 
         except SendInBlueError as err:
             print(err)
             new_confirmation.delete_from_db()
-            return {"message": REGISTERATION_FAILED}, 500
+            return {"message": get_text('confirmation_resend_activation_email_failed')}, 500
 
         except Exception as ex:
             print(ex)
             return {
-                "message": SERVER_ERROR
+                "message": get_text('server_error_generic')
             }, 500

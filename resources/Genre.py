@@ -1,25 +1,19 @@
+from flask import request
 from flask_restful import Resource
+from flask_jwt_extended import jwt_required
+from marshmallow.exceptions import ValidationError
+
 from models.Genre import GenreModel
 from models.Anime import AnimeModel
+
 from schemas.Genre import GenreSchema
 from schemas.Anime import AnimeSchema
-from marshmallow.exceptions import ValidationError
-from flask import request
-from flask_jwt_extended import jwt_required
+
+from helpers.strings import get_text
 
 genre_information_schema = GenreSchema()
 animes_list_schema = AnimeSchema(many=True)
 genres_list_schema = GenreSchema(many=True)
-
-GENRE_CREATED = "Genre has been created."
-GENRE_CREATION_ERROR = "Genre could not be created. Please try again."
-GENRE_UPDATED = "Genre has been updated."
-GENRE_EXISTS = "The genre already exists."
-GENRE_DELETED = "Genre deleted."
-GENRE_NOT_FOUND = "Specified genre is not found. If it is a valid genre, please pm us. :)"
-GENRE_NOT_FOUND_DELETION = "Genre is not found. Please double check."
-SERVER_ERROR = "Something went wrong on our servers. If you === dev, check logs."
-INPUT_ERROR = "Error! please check your input(s)."
 
 
 class GenreInfo(Resource):
@@ -57,11 +51,10 @@ class GenreInfo(Resource):
 
                 return response_data, 200
 
-            return {"message": GENRE_NOT_FOUND}, 404
+            return {"message": get_text('genre_not_found')}, 404
 
         except Exception as error:
             print(error)
-            return {"message": SERVER_ERROR}, 500
 
 
 class Genres(Resource):
@@ -90,18 +83,17 @@ class Genres(Resource):
                     genre = GenreModel(**genre_data)
                     genre_id = genre.save_to_db()
                     if genre_id:
-                        return {"message": GENRE_CREATED}, 201
+                        return {"message": get_text('genre_created')}, 201
 
-                    return {"message": GENRE_CREATION_ERROR}, 500
+                    return {"message": get_text('genre_creation_error')}, 500
 
                 except Exception as error:
                     print(error)
-                    return {"message": SERVER_ERROR}, 500
 
-            return {"message": GENRE_EXISTS}, 409
+            return {"message": get_text('genre_already_exists')}, 409
 
         except ValidationError as error:
-            return {"message": INPUT_ERROR, "info": error.messages}, 400
+            return {"message": get_text('input_error_generic'), "info": error.messages}, 400
 
     @classmethod
     @jwt_required
@@ -116,20 +108,19 @@ class Genres(Resource):
                     genre = GenreModel(**genre_data)
                     genre_id = genre.save_to_db()
                     if genre_id:
-                        return {"message": GENRE_CREATED}, 201
+                        return {"message": get_text('genre_created')}, 201
 
-                    return {"message": GENRE_CREATION_ERROR}, 500
+                    return {"message": get_text('genre_creation_error')}, 500
 
                 genre.genre_explanation = genre_data["genre_explanation"]
                 genre.save_to_db()
-                return {"message": GENRE_UPDATED}, 200
+                return {"message": get_text('genre_updated')}, 200
 
             except Exception as error:
                 print(error)
-                return {"message": SERVER_ERROR}, 500
 
         except ValidationError as error:
-            return {"message": INPUT_ERROR, "info": error.messages}, 400
+            return {"message": get_text('input_error_generic'), "info": error.messages}, 400
 
     @classmethod
     @jwt_required
@@ -142,13 +133,12 @@ class Genres(Resource):
             if genre:
                 try:
                     genre.delete_from_db()
-                    return {"message": GENRE_DELETED}, 200
+                    return {"message": get_text('genre_deleted')}, 200
 
                 except Exception as error:
                     print(error)
-                    return {"message": SERVER_ERROR}, 500
 
-            return {"message": GENRE_NOT_FOUND_DELETION}, 404
+            return {"message": get_text('genre_not_found_deletion')}, 404
 
         except ValidationError as error:
-            return {"message": INPUT_ERROR, "info": error.messages}, 400
+            return {"message": get_text('input_error_generic'), "info": error.messages}, 400

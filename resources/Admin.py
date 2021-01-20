@@ -7,20 +7,9 @@ from flask_jwt_extended import jwt_required, get_jwt_claims
 from models.Admin import AdminModel
 from schemas.Admin import AdminSchema
 
-admin_schema = AdminSchema()
+from helpers.strings import get_text
 
-ADMIN_REGISTERED = "Admin registeration successful."
-USERNAME_EXISTS = "An admin with that username already exists. Please try another."
-ADMIN_REGISTERATION_ERROR = "An error occurred while registering your info. Please try again."
-ADMIN_NOT_FOUND = "Admin not found."
-SERVER_ERROR = "Something went wrong on our servers."
-INPUT_ERROR = "Error! please check your input(s)."
-ACC_INFO_ACCESS_FORBIDDEN = "God level admin access required to view others' profile."
-ACC_CREATION_FORBIDDEN = "God level admin access required to create another admin."
-UNAUTHORIZED_TO_DELETE = "Unauthorized to delete."
-ADMIN_DELETED = "The admin has been deleted."
-ADMIN_UPDATED = "Admin info has been updated."
-UNAUTHORIZED_TO_UPDATE = "Unauthorized to modify admin info."
+admin_schema = AdminSchema()
 
 role = None
 authenticated_admin_id = None
@@ -49,9 +38,9 @@ class GetAdmin(Resource):
 
                 return admin_info, 200
 
-            return {"message": ACC_INFO_ACCESS_FORBIDDEN}, 403
+            return {"message": get_text('admin_acc_info_access_forbidden')}, 403
 
-        return {"message": ADMIN_NOT_FOUND}
+        return {"message": get_text('admin_not_found')}
 
 
 class CreateAdmin(Resource):
@@ -64,7 +53,7 @@ class CreateAdmin(Resource):
                 admin_info = admin_schema.load(request.get_json())
                 admin = AdminModel.find_by_username(admin_info["username"])
                 if admin:
-                    return {"message": USERNAME_EXISTS}, 409
+                    return {"message": get_text('admin_username_exists')}, 409
 
                 hashed_password = generate_password_hash(
                     admin_info["password"])
@@ -73,18 +62,16 @@ class CreateAdmin(Resource):
                 admin_id = admin.save_to_db()
 
                 if admin_id:
-                    return {"message": ADMIN_REGISTERED, "admin_id": admin_id}, 201
+                    return {"message": get_text('admin_registered'), "admin_id": admin_id}, 201
 
-                return {"message": ADMIN_REGISTERATION_ERROR}, 500
+                return {"message": get_text('admin_registeration_error')}, 500
 
             except ValidationError as error:
-                return {"message": INPUT_ERROR, "info": error.messages}, 400
+                return {"message": get_text('input_error_generic'), "info": error.messages}, 400
 
             except Exception as ex:
                 print(ex)
-                return {"message": SERVER_ERROR}, 500
-
-        return {"message": ACC_CREATION_FORBIDDEN}, 403
+                return {"message": get_text('server_error_generic')}, 500
 
     @classmethod
     @jwt_required
@@ -103,22 +90,22 @@ class CreateAdmin(Resource):
 
                 if condition_one:
                     admin.name = admin_info.get("name")
-                    return {"message": ADMIN_UPDATED}, 200
+                    return {"message": get_text('admin_info_updated')}, 200
                 elif condition_two:
                     admin.name = admin_info.get("name")
                     admin.role = admin_info.get("role")
-                    return {"message": ADMIN_UPDATED}, 200
+                    return {"message": get_text('admin_info_updated')}, 200
 
-                return {"message": UNAUTHORIZED_TO_UPDATE}, 401
+                return {"message": get_text('admin_info_modification_forbidden')}, 401
 
-            return {"message": ADMIN_NOT_FOUND}
+            return {"message": get_text('admin_not_found')}
 
         except ValidationError as error:
-            return {"message": INPUT_ERROR, "info": error.messages}, 400
+            return {"message": get_text('input_error_generic'), "info": error.messages}, 400
 
         except Exception as ex:
             print(ex)
-            return {"message": SERVER_ERROR}, 500
+            return {"message": get_text('server_error_generic')}, 500
 
     @classmethod
     @jwt_required
@@ -137,15 +124,15 @@ class CreateAdmin(Resource):
 
                 if condition_one or condition_two:
                     admin.delete_from_db()
-                    return {"message": ADMIN_DELETED}, 200
+                    return {"message": get_text('admin_deleted')}, 200
 
-                return {"message": UNAUTHORIZED_TO_DELETE}, 401
+                return {"message": get_text('admin_unauthorized_deletion')}, 401
 
-            return {"message": ADMIN_NOT_FOUND}
+            return {"message": get_text('admin_not_found')}
 
         except ValidationError as error:
-            return {"message": INPUT_ERROR, "info": error.messages}, 400
+            return {"message": get_text('input_error_generic'), "info": error.messages}, 400
 
         except Exception as ex:
             print(ex)
-            return {"message": SERVER_ERROR}, 500
+            return {"message": get_text('server_error_generic')}, 500

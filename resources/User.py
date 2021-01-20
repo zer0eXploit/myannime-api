@@ -22,29 +22,12 @@ from schemas.Auth import AuthSchema
 from schemas.User import UserSchema, SaveUserAnimeSchema, DumpUserInfoSchema
 
 from helpers.send_in_blue import SendInBlue, SendInBlueError
+from helpers.strings import get_text
 
 auth_schema = AuthSchema()
 user_info_schema = UserSchema()
 user_anime_save_schema = SaveUserAnimeSchema()
 user_min_info_schema = DumpUserInfoSchema()
-
-INORRECT_CREDENTIALS = "Bad credentials."
-SERVER_ERROR = "Something went wrong on our servers."
-INPUT_ERROR = "Error! please check your input(s)."
-USERNAME_EXISTS = "A user with that username already exists. Please use another."
-EMAIL_EXISTS = "A user with that email is already registered. Please use another."
-INACTIVE_ACCOUNT = "Your account is not active yet. Please check your email to activate your account."
-INACTIVE_ACCOUNT_MSG_2 = "If you didn't get an activation email, please request a new one."
-INCOMPLETE_DATA = "Required data are not present."
-ACTIVATION_EMAIL_SENT = "An activation email has been sent to your email address."
-ANIME_SAVED = "Anime saved to user's collection."
-USER_NOT_FOUND = "User not found."
-SAVE_ANIME_FAILED = "Error saving anime."
-ANIME_REMOVED = "Successfully removed anime."
-REMOVE_ANIME_FAILED = "Error removing anime."
-ANIME_NOT_SAVED_BEFORE = "The anime is not saved to begin with."
-ANIME_SAVED_BEFORE = "This anime is already saved."
-REGISTERATION_FAILED = "Error registering a new user. Please try again."
 
 DOMAIN_NAME = os.environ.get("DOMAIN_NAME")
 
@@ -61,15 +44,15 @@ class Login(Resource):
             if user and check_password_hash(user.password, password):
                 if user.last_confirmation is None:
                     return {
-                        "message_1": INACTIVE_ACCOUNT,
-                        "message_2": INACTIVE_ACCOUNT_MSG_2
+
+                        "message_2": get_text('user_account_not_activated_2')
                     }, 403
 
                 activated = user.last_confirmation.confirmed
                 if not activated or user.last_confirmation is None:
                     return {
-                        "message_1": INACTIVE_ACCOUNT,
-                        "message_2": INACTIVE_ACCOUNT_MSG_2
+
+                        "message_2": get_text('user_account_not_activated_2')
                     }, 403
 
                 exp_time = datetime.timedelta(hours=3)
@@ -86,14 +69,14 @@ class Login(Resource):
                     "refresh_token": refresh_token
                 }, 200
 
-            return {"message": INORRECT_CREDENTIALS}, 400
+            return {"message": get_text('user_incorrect_credentials')}, 400
 
         except ValidationError as error:
-            return {"message": INPUT_ERROR, "info": error.messages}, 400
+            return {"message": get_text('input_error_generic'), "info": error.messages}, 400
 
         except Exception as ex:
             print(ex)
-            return {"message": SERVER_ERROR}, 500
+            return {"message": get_text('server_error_generic')}, 500
 
 
 class RefreshToken(Resource):
@@ -109,12 +92,12 @@ class RefreshToken(Resource):
                 }, 200
 
             return {
-                'message': USER_NOT_FOUND
+                'message': get_text('user_not_found')
             }, 404
 
         except Exception as ex:
             print(ex)
-            return {"message": SERVER_ERROR}, 500
+            return {"message": get_text('server_error_generic')}, 500
 
 
 class Register(Resource):
@@ -123,10 +106,10 @@ class Register(Resource):
         try:
             user_info = user_info_schema.load(request.get_json())
             if UserModel.find_by_username(user_info.get("username", None)):
-                return {"message": USERNAME_EXISTS}, 409
+                return {"message": get_text('user_username_exists')}, 409
 
             if UserModel.find_by_email(user_info.get("email", None)):
-                return {"message": EMAIL_EXISTS}, 409
+                return {"message": get_text('user_email_exists')}, 409
 
             hashed_password = generate_password_hash(user_info["password"])
             user_info["password"] = hashed_password
@@ -145,21 +128,21 @@ class Register(Resource):
                         activation_link=activation_link
                     )
 
-                    return {"message": ACTIVATION_EMAIL_SENT}, 200
+                    return {"message": get_text('user_activation_email_sent')}, 200
                 except SendInBlueError as err:
                     print(err)
                     new_user.delete_from_db()
                     confirmation.delete_from_db()
-                    return {"message": REGISTERATION_FAILED}, 500
+                    return {"message": get_text('user_registeration_error')}, 500
 
         except ValidationError as error:
-            return {"message": INPUT_ERROR, "info": error.messages}, 400
+            return {"message": get_text('input_error_generic'), "info": error.messages}, 400
 
         except Exception as ex:
             print(ex)
             confirmation.delete_from_db()
             new_user.delete_from_db()
-            return {"message": SERVER_ERROR}, 500
+            return {"message": get_text('server_error_generic')}, 500
 
 
 class UserInfo(Resource):
@@ -185,12 +168,12 @@ class UserInfo(Resource):
                 }, 200
 
             return {
-                "message": USER_NOT_FOUND
+                "message": get_text('user_not_found')
             }, 404
 
         except Exception as ex:
             print(ex)
-            return {"message": SERVER_ERROR}, 500
+            return {"message": get_text('server_error_generic')}, 500
 
 
 class SaveAnime(Resource):
@@ -205,29 +188,29 @@ class SaveAnime(Resource):
             if user:
                 if user.has_user_saved_anime(anime_id):
                     return {
-                        "message": ANIME_SAVED_BEFORE
+                        "message": get_text('user_anime_saved_already')
                     }, 400
 
                 successful = user.save_anime(anime_id)
                 if successful:
                     return {
-                        "message": ANIME_SAVED
+                        "message": get_text('user_anime_saved')
                     }, 201
 
                 return {
-                    "message": SAVE_ANIME_FAILED
+                    "message": get_text('user_anime_saving_error')
                 }, 400
 
             return {
-                "message": USER_NOT_FOUND
+                "message": get_text('user_not_found')
             }, 404
 
         except ValidationError as error:
-            return {"message": INPUT_ERROR, "info": error.messages}, 400
+            return {"message": get_text('input_error_generic'), "info": error.messages}, 400
 
         except Exception as ex:
             print(ex)
-            return {"message": SERVER_ERROR}, 500
+            return {"message": get_text('server_error_generic')}, 500
 
     @classmethod
     @jwt_required
@@ -242,24 +225,24 @@ class SaveAnime(Resource):
                     successful = user.remove_anime(anime_id)
                     if successful:
                         return {
-                            "message": ANIME_REMOVED
+                            "message": get_text('user_anime_removing_successful')
                         }, 200
 
                     return {
-                        "message": REMOVE_ANIME_FAILED
+                        "message": get_text('user_anime_removing_error')
                     }, 400
 
                 return {
-                    "message": ANIME_NOT_SAVED_BEFORE
+                    "message": get_text('user_anime_not_saved_before')
                 }, 404
 
             return {
-                "message": USER_NOT_FOUND
+                "message": get_text('user_not_found')
             }, 404
 
         except ValidationError as error:
-            return {"message": INPUT_ERROR, "info": error.messages}, 400
+            return {"message": get_text('input_error_generic'), "info": error.messages}, 400
 
         except Exception as ex:
             print(ex)
-            return {"message": SERVER_ERROR}, 500
+            return {"message": get_text('server_error_generic')}, 500

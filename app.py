@@ -29,6 +29,7 @@ from resources.Image import ImageUpload, Image, AvatarGET, AvatarPUT
 from resources.Loader_io import Loader
 
 from helpers.image_helper import IMAGE_SET
+from helpers.strings import get_text
 
 app = Flask(__name__)
 
@@ -42,12 +43,10 @@ app.secret_key = os.environ.get("APP_SECRET")
 
 @app.errorhandler(404)
 def page_not_found(e):
-    MESSAGE_ONE = "The requested resource is not found on this server."
-    MESSAGE_TWO = "If it is something that should exist, please contact us."
     PATH = request.path
     response = {
-        "message_one": MESSAGE_ONE,
-        "message_two": MESSAGE_TWO,
+        "message_one": get_text("resource_not_found_1"),
+        "message_two": get_text("resource_not_found_2"),
         "requested_path": PATH
     }
 

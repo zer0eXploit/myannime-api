@@ -6,10 +6,10 @@ from models.Anime import AnimeModel
 from models.Episode import EpisodeModel
 from schemas.Anime import AnimeSchema
 
+from helpers.strings import get_text
+
 anime_schema = AnimeSchema()
 animes_list_schema = AnimeSchema(many=True)
-
-SERVER_ERROR = "Something went wrong on our servers. If you == dev, please check logs."
 
 
 class AnimesList(Resource):
@@ -38,4 +38,4 @@ class AnimesList(Resource):
         except Exception as ex:
             print(ex)
 
-            return {"message": SERVER_ERROR}, 500
+            return {"message": get_text('server_error_generic')}, 500
