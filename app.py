@@ -20,12 +20,11 @@ from resources.AuthToken import RequestToken
 from resources.User import (
     Login,
     Register,
-    Activate,
-    ResendActivationEmail,
     RefreshToken,
     SaveAnime,
     UserInfo
 )
+from resources.Confirmation import Activate, ResendActivationEmail, UserConfirm
 from resources.Image import ImageUpload, Image, AvatarGET, AvatarPUT
 from resources.Loader_io import Loader
 
@@ -68,7 +67,7 @@ jwt = JWTManager(app)
 @jwt.user_claims_loader
 def add_claims_to_access_token(user):
     if user and hasattr(user, "role"):
-        if user.role != "user":
+        if user.role != "Regular Member":
             claims = {
                 "admin_id": user._id,
                 "name": user.name,
@@ -111,6 +110,7 @@ api.add_resource(RefreshToken, "/v1/user/refresh")
 api.add_resource(Register, "/v1/user/register")
 api.add_resource(Activate, "/v1/user/activate")
 api.add_resource(ResendActivationEmail, "/v1/user/resend_activation_email")
+api.add_resource(UserConfirm, "/v1/user/confirm_status/<string:username>")
 api.add_resource(ImageUpload, "/v1/upload/image")
 api.add_resource(Image, "/v1/image/<string:filename>")
 api.add_resource(UserInfo, "/v1/user/info")
