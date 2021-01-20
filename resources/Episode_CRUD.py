@@ -2,7 +2,7 @@ from typing import Dict
 from flask_restful import Resource
 from flask import request
 from marshmallow.exceptions import ValidationError
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_claims
 
 from models.Episode import EpisodeModel
 
@@ -34,6 +34,10 @@ class CreateEpisode(Resource):
     @jwt_required
     def post(cls):
         try:
+            current_user_role = get_jwt_claims().get("role", None)
+            if not current_user_role or current_user_role == "Regular Member":
+                return {"message": get_text('episode_access_forbidden')}, 403
+
             episode_data = episode_info_schema.load(request.get_json())
             episode = EpisodeModel(**episode_data)
             episode_id = episode.save_to_db()
@@ -59,6 +63,10 @@ class EditEpisode(Resource):
             return response, 400
 
         try:
+            current_user_role = get_jwt_claims().get("role", None)
+            if not current_user_role or current_user_role == "Regular Member":
+                return {"message": get_text('episode_access_forbidden')}, 403
+
             episode = EpisodeModel.find_by_id(episode_id)
             if episode:
                 episode_info = episode_info_schema.load(request.get_json())
@@ -91,6 +99,10 @@ class EditEpisode(Resource):
             return response, 400
 
         try:
+            current_user_role = get_jwt_claims().get("role", None)
+            if not current_user_role or current_user_role == "Regular Member":
+                return {"message": get_text('episode_access_forbidden')}, 403
+
             episode_to_delete = EpisodeModel.find_by_id(episode_id)
             if episode_to_delete:
                 info = episode_to_delete.delete_from_db()
