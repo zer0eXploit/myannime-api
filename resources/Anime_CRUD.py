@@ -8,6 +8,7 @@ from models.Anime import AnimeModel
 from models.User import UserModel
 
 from helpers.check_uuid import valid_uuid4
+from helpers.strings import get_text
 
 from schemas.Anime import AnimeSchema
 from schemas.Episode import EpisodeSchema
@@ -15,26 +16,13 @@ from schemas.Episode import EpisodeSchema
 anime_info_schema = AnimeSchema()
 episode_schema = EpisodeSchema(many=True)
 
-UUID_ERROR = "Incorrect anime_id format."
-ANIME_CREATED = "Anime has been created."
-ANIME_UPDATED = "Anime has been updated."
-ANIME_DELETED = "Anime ID {anime_id} has been deleted."
-ANIME_NOT_FOUND = "Anime {anime_id} is not found."
-ANIME_EXISTS = "Anime already exists."
-ANIME_NAME_EXISTS = "Anime name already exists."
-DELETION_ERROR = "Could not delete anime. Delete the episodes first."
-SERVER_ERROR = "Something went wrong on our servers."
-INPUT_ERROR = "Error! please check your input(s)."
-GENRES_LIST_FIELD_REQUIRED = "Genres list is required."
-FORBIDDEN = "You don't have access to the requested resource. That's all we know."
-
 
 class GetAnime(Resource):
     @classmethod
     @jwt_optional
     def get(cls, anime_id):
         if not valid_uuid4(anime_id):
-            response = {"message": UUID_ERROR}
+            response = {"message": get_text('anime_uuid_error')}
             return response, 400
 
         anime = AnimeModel.find_by_id(anime_id)
@@ -60,7 +48,7 @@ class GetAnime(Resource):
             }
             return anime_data, 200
 
-        return {"message": ANIME_NOT_FOUND.format(anime_id=anime_id)}, 404
+        return {"message": get_text('anime_not_found').format(anime_id=anime_id)}, 404
 
 
 class CreateAnime(Resource):
@@ -69,31 +57,29 @@ class CreateAnime(Resource):
     def post(cls):
         current_user_role = get_jwt_claims().get("role", None)
 
-        print(current_user_role)
-
-        if not current_user_role or current_user_role == "user":
-            return {"message": FORBIDDEN}, 403
+        if not current_user_role or current_user_role == "Regular Member":
+            return {"message": get_text('anime_access_forbidden')}, 403
 
         try:
             anime_data = anime_info_schema.load(request.get_json())
             genres_list = anime_data.get("genres_list", None)
             if not genres_list:
-                return {"message": GENRES_LIST_FIELD_REQUIRED}, 400
+                return {"message": get_text('anime_genres_required')}, 400
 
             anime_data.pop("genres_list", None)
             anime = AnimeModel(**anime_data)
             anime_id = anime.save_to_db(genres_list)
             if anime_id:
                 created_data = {
-                    "message": ANIME_CREATED,
+                    "message": get_text('anime_created'),
                     "anime_id": f"{anime_id}"
                 }
                 return created_data, 201
 
-            return {"message": ANIME_EXISTS}, 409
+            return {"message": get_text('anime_already_exists')}, 409
 
         except ValidationError as error:
-            return {"message": INPUT_ERROR, "info": error.messages}, 400
+            return {"message": get_text('input_error_generic'), "info": error.messages}, 400
 
 
 class EditAnime(Resource):
@@ -101,14 +87,19 @@ class EditAnime(Resource):
     @jwt_required
     def put(cls, anime_id):
         if not valid_uuid4(anime_id):
-            response = {"message": UUID_ERROR}
+            response = {"message": get_text('anime_uuid_error')}
             return response, 400
+
+        current_user_role = get_jwt_claims().get("role", None)
+
+        if not current_user_role or current_user_role == "Regular Member":
+            return {"message": get_text('anime_access_forbidden')}, 403
 
         try:
             anime_data = anime_info_schema.load(request.get_json())
             genres_list = anime_data.get("genres_list", None)
             if not genres_list:
-                return {"message": GENRES_LIST_FIELD_REQUIRED}, 400
+                return {"message": get_text('anime_genres_required')}, 400
 
             anime_data.pop("genres_list", None)
             anime = AnimeModel.find_by_id(anime_id)
@@ -122,36 +113,40 @@ class EditAnime(Resource):
                 anime.poster_uri = anime_data["poster_uri"]
                 anime_id = anime.save_to_db(genres_list)
                 if anime_id:
-                    return {"message": ANIME_UPDATED}, 200
+                    return {"message": get_text('anime_updated')}, 200
 
                 # returns an error from model because anime title naming conflict
-                return {"message": ANIME_NAME_EXISTS}, 409
+                return {"message": get_text('anime_name_exists')}, 409
 
             # if there is no anime with the given id create new one
             anime = AnimeModel(**anime_data)
             anime_id = anime.save_to_db(genres_list)
             if anime_id:
-                return {"message": ANIME_CREATED, "anime_id": anime_id}, 200
+                return {"message": get_text('anime_created'), "anime_id": anime_id}, 200
 
             # returns an error from model because anime title naming conflict
-            return {"message": ANIME_NAME_EXISTS}, 409
+            return {"message": get_text('anime_name_exists')}, 409
 
         except ValidationError as error:
-            return {"message": INPUT_ERROR, "info": error.messages}, 400
+            return {"message": get_text('input_error_generic'), "info": error.messages}, 400
 
     @classmethod
     @jwt_required
     def delete(cls, anime_id):
         if not valid_uuid4(anime_id):
-            response = {"message": UUID_ERROR}
+            response = {"message": get_text('anime_uuid_error')}
             return response, 400
+
+        current_user_role = get_jwt_claims().get("role", None)
+        if not current_user_role or current_user_role == "Regular Member":
+            return {"message": get_text('anime_access_forbidden')}, 403
 
         anime = AnimeModel.find_by_id(anime_id)
         if anime:
             info = anime.delete_from_db()
             if not info:
-                return {"message": ANIME_DELETED.format(anime_id=anime_id)}, 200
+                return {"message": get_text('anime_deleted').format(anime_id=anime_id)}, 200
 
-            return {"message": DELETION_ERROR}, 400
+            return {"message": get_text('anime_deletion_error')}, 400
 
-        return {"message": ANIME_NOT_FOUND.format(anime_id=anime_id)}, 404
+        return {"message": get_text('anime_not_found').format(anime_id=anime_id)}, 404
