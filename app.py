@@ -1,5 +1,4 @@
-import os
-
+from dotenv import load_dotenv
 from flask import Flask, request, jsonify, send_from_directory
 from flask_restful import Api
 from flask_jwt_extended import JWTManager
@@ -35,12 +34,15 @@ from helpers.strings import get_text
 
 app = Flask(__name__)
 
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DB_URI")
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET")
-app.config["DEBUG"] = True
-app.config["UPLOADED_IMAGES_DEST"] = os.path.join("static", "images")
-app.secret_key = os.environ.get("APP_SECRET")
+# .env is loaded automatically when app.run is called
+# but our config file is dependent on .env so will have to load manually
+load_dotenv('.env', verbose=True)
+
+# load config
+app.config.from_object("default_config")
+# overrides default config values with config values from APPLICATION_SETTINGS envvar
+# i.e., swapping configs is easier
+app.config.from_envvar("APPLICATION_SETTINGS")
 
 
 @app.errorhandler(404)
@@ -127,10 +129,10 @@ if __name__ == "__main__":
     db.init_app(app)
     ma.init_app(app)
 
-    # if app.config["DEBUG"]:
-    # @app.before_first_request
-    # def create_tables():
-    #     # db.drop_all()
-    #     db.create_all()
+    if app.config["DEBUG"]:
+        @app.before_first_request
+        def create_tables():
+            # db.drop_all()
+            db.create_all()
 
     app.run(port=5000, debug=True)
