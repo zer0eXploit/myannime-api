@@ -4,6 +4,7 @@ from db import db
 from models.Anime import AnimeModel
 from models.UserAnimes import user_animes
 from models.UserConfirmation import ConfirmationModel
+from models.PasswordReset import PasswordResetModel
 from sqlalchemy.exc import IntegrityError
 
 
@@ -18,6 +19,11 @@ class UserModel(db.Model):
     password = db.Column(db.String(150), nullable=False)
     confirmation = db.relationship(
         'ConfirmationModel',
+        lazy='dynamic',
+        cascade='all, delete-orphan'
+    )
+    password_reset = db.relationship(
+        PasswordResetModel,
         lazy='dynamic',
         cascade='all, delete-orphan'
     )
@@ -43,7 +49,7 @@ class UserModel(db.Model):
         return cls.\
             query.\
             filter_by(_id=user_id).\
-            with_entities(cls._id, cls.name, cls.role, cls.username, cls.email, cls.activated, cls.joined).\
+            with_entities(cls._id, cls.name, cls.role, cls.username, cls.email, cls.joined).\
             first()
 
     @classmethod
