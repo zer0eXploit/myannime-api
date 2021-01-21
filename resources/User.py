@@ -100,6 +100,53 @@ class RefreshToken(Resource):
             return {"message": get_text('server_error_generic')}, 500
 
 
+class ChangePassword(Resource):
+    @classmethod
+    @jwt_required
+    def put(cls):
+        '''
+        Compare old password against old password hash.
+        If correct set the new password to current password.
+        '''
+        try:
+            current_user = get_jwt_identity()
+            user = UserModel.find_by_username(current_user)
+            if user:
+                old_password = request.get_json().get('old_password', None)
+                new_password = request.get_json().get('new_password', None)
+
+                if old_password is None:
+                    return {
+                        'message': get_text('user_old_password_required')
+                    }, 400
+
+                if new_password is None:
+                    return {
+                        'message': get_text('user_new_password_required')
+                    }, 400
+
+                if check_password_hash(user.password, old_password):
+                    user.password = generate_password_hash(new_password)
+                    user.save_to_db()
+                    return {
+                        "message": get_text('user_password_updated')
+                    }, 200
+
+                return {
+                    "message": get_text('user_incorrect_old_password')
+                }, 401
+
+            return {
+                'message': get_text('user_not_found')
+            }, 404
+
+        except Exception as ex:
+            print(ex)
+            return {
+                "message": get_text('server_error_generic')
+            }, 500
+
+
 class Register(Resource):
     @classmethod
     def post(cls):
