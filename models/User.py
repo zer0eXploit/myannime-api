@@ -46,11 +46,7 @@ class UserModel(db.Model):
 
     @classmethod
     def find_by_id(cls, user_id: str) -> "UserModel":
-        return cls.\
-            query.\
-            filter_by(_id=user_id).\
-            with_entities(cls._id, cls.name, cls.role, cls.username, cls.email, cls.password, cls.joined).\
-            first()
+        return cls.query.filter_by(_id=user_id).first()
 
     @classmethod
     def find_by_email(cls, email: str) -> "UserModel":
