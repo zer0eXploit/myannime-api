@@ -81,5 +81,17 @@
     "user_anime_removing_error": "Error removing anime.",
     "user_anime_not_saved_before": "The anime is not saved to begin with.",
     "user_anime_saved_already": "This anime is already saved.",
-    "user_registeration_error":"Error registering a new user. Please try again."
+    "user_registeration_error":"Error registering a new user. Please try again.",
+
+    "reset_password_email_not_present": "Email is required.",
+    "reset_password_inactive_account": "A confirmed email is required to reset the password. Check your email to confirm or request a new confirmation email.",
+    "reset_password_email_sent": "An email with a link to reset your password has been sent.",
+    "reset_password_user_not_found": "There is no account linked to the provided email.",
+    "reset_password_failed_to_send_email": "There is an error sending you an email. Please try again.",
+    "reset_password_token_required": "Reset password token is required.",
+    "reset_password_token_invalid": "Reset password token is not valid.",
+    "reset_password_token_expired": "Reset password token has expired. Please request a new password reset email.",
+    "reset_password_new_password_required": "A new password is required in POST body.",
+    "reset_password_password_updated": "Password updated successfully.",
+    "reset_password_user_from_token_not_found": "Unable to reset the password. User is not found."
 }
