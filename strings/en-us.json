@@ -82,6 +82,10 @@
     "user_anime_not_saved_before": "The anime is not saved to begin with.",
     "user_anime_saved_already": "This anime is already saved.",
     "user_registeration_error":"Error registering a new user. Please try again.",
+    "user_old_password_required": "Old password: 'old_password' field is required.",
+    "user_new_password_required": "New password: 'new_password' field is required.",
+    "user_incorrect_old_password": "Incorrect old password.",
+    "user_password_updated": "Password updated successfully.",
 
     "reset_password_email_not_present": "Email is required.",
     "reset_password_inactive_account": "A confirmed email is required to reset the password. Check your email to confirm or request a new confirmation email.",
