@@ -26,6 +26,7 @@ from resources.User import (
 )
 from resources.Confirmation import Activate, ResendActivationEmail, UserConfirm
 from resources.Image import ImageUpload, Image, AvatarGET, AvatarPUT
+from resources.ResetPassword import RequestPasswordReset, PasswordReset
 from resources.Loader_io import Loader
 
 from helpers.image_helper import IMAGE_SET
@@ -109,6 +110,8 @@ api.add_resource(RefreshToken, "/v1/user/refresh")
 api.add_resource(Register, "/v1/user/register")
 api.add_resource(Activate, "/v1/user/activate")
 api.add_resource(ResendActivationEmail, "/v1/user/resend_activation_email")
+api.add_resource(RequestPasswordReset, "/v1/user/send_password_reset_email")
+api.add_resource(PasswordReset, "/v1/user/reset_password")
 api.add_resource(UserConfirm, "/v1/user/confirm_status/<string:username>")
 api.add_resource(ImageUpload, "/v1/upload/image")
 api.add_resource(Image, "/v1/image/<string:filename>")
