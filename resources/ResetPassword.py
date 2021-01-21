@@ -2,7 +2,7 @@ import os
 
 from flask import request
 from flask_restful import Resource
-from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.security import generate_password_hash
 
 from models.User import UserModel
 from models.PasswordReset import PasswordResetModel
