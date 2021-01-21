@@ -49,7 +49,7 @@ class UserModel(db.Model):
         return cls.\
             query.\
             filter_by(_id=user_id).\
-            with_entities(cls._id, cls.name, cls.role, cls.username, cls.email, cls.joined).\
+            with_entities(cls._id, cls.name, cls.role, cls.username, cls.email, cls.password, cls.joined).\
             first()
 
     @classmethod
