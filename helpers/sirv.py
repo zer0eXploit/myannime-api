@@ -8,6 +8,8 @@ class Sirv():
     def __init__(self, client_id, client_secret):
         self.client_id = client_id
         self.client_secret = client_secret
+        self.sirv_token = None
+        self.sirv_token_expiry = None
 
     def get_auth_token(self):
         print("Getting auth token...")
@@ -25,24 +27,24 @@ class Sirv():
             now = datetime.datetime.now()
             time_expires = now + datetime.timedelta(seconds=1200)
             time_expires = int(time_expires.timestamp())
-            os.environ["SIRV_AUTH_TOKEN"] = r.json()['token']
-            os.environ["SIRV_AUTH_TOKEN_TIME_EXPIRES"] = f'{time_expires}'
+            self.sirv_token = r.json()['token']
+            self.sirv_token_expiry = f'{time_expires}'
             print("Auth token attained...")
 
     def token_expiry_check(self):
-        time_expires = int(os.environ.get("SIRV_AUTH_TOKEN_TIME_EXPIRES"))
+        time_expires = int(self.sirv_token_expiry)
         now = datetime.datetime.now().timestamp()
 
         if time_expires < now:
-            os.environ["SIRV_AUTH_TOKEN"] = None
-            os.environ["SIRV_AUTH_TOKEN_TIME_EXPIRES"] = None
+            self.sirv_token = None
+            self.sirv_token_expiry = None
 
     def setup(self):
         '''
         Make necessary preperations to upload file to sirv.
         Check token existence and validity.
         '''
-        sirv_token = os.environ.get("SIRV_AUTH_TOKEN", None)
+        sirv_token = self.sirv_token
 
         if sirv_token is not None:
             print("Checking Sirv token expiry...")
@@ -57,7 +59,7 @@ class Sirv():
 
         self.setup()
 
-        auth_token = os.environ.get("SIRV_AUTH_TOKEN")
+        auth_token = self.sirv_token
         querystring = {'filename': f"/{sirv_folder_name}/{file_name}"}
         file_location = f'{file_path}/{file_name}'
         payload = open(file_location, 'rb')
@@ -82,7 +84,7 @@ class Sirv():
 
         self.setup()
 
-        auth_token = os.environ.get("SIRV_AUTH_TOKEN")
+        auth_token = self.sirv_token
         querystring = {'filename': f"/{sirv_folder_name}/{file_name}"}
         headers = {
             'content-type': 'application/json',
