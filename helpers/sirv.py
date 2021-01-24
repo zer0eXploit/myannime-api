@@ -8,9 +8,8 @@ class Sirv():
     def __init__(self, client_id, client_secret):
         self.client_id = client_id
         self.client_secret = client_secret
-        self.sirv_token = None
-        self.sirv_token_expiry = None
 
+    @property
     def get_auth_token(self):
         print("Getting auth token...")
         AUTH_URI = 'https://api.sirv.com/v2/token'
@@ -27,39 +26,15 @@ class Sirv():
             now = datetime.datetime.now()
             time_expires = now + datetime.timedelta(seconds=1200)
             time_expires = int(time_expires.timestamp())
-            self.sirv_token = r.json()['token']
-            self.sirv_token_expiry = f'{time_expires}'
             print("Auth token attained...")
+            return r.json()['token']
 
-    def token_expiry_check(self):
-        time_expires = int(self.sirv_token_expiry)
-        now = datetime.datetime.now().timestamp()
-
-        if time_expires < now:
-            self.sirv_token = None
-            self.sirv_token_expiry = None
-
-    def setup(self):
-        '''
-        Make necessary preperations to upload file to sirv.
-        Check token existence and validity.
-        '''
-        sirv_token = self.sirv_token
-
-        if sirv_token is not None:
-            print("Checking Sirv token expiry...")
-            self.token_expiry_check()
-
-        if sirv_token is None:
-            print("Sirv token not found.")
-            self.get_auth_token()
+        return None
 
     def upload(self, file_name, file_path, sirv_folder_name):
         URI = 'https://api.sirv.com/v2/files/upload'
 
-        self.setup()
-
-        auth_token = self.sirv_token
+        auth_token = self.get_auth_token
         querystring = {'filename': f"/{sirv_folder_name}/{file_name}"}
         file_location = f'{file_path}/{file_name}'
         payload = open(file_location, 'rb')
@@ -82,9 +57,7 @@ class Sirv():
     def delete(self, file_name, sirv_folder_name):
         URI = 'https://api.sirv.com/v2/files/delete'
 
-        self.setup()
-
-        auth_token = self.sirv_token
+        auth_token = self.get_auth_token
         querystring = {'filename': f"/{sirv_folder_name}/{file_name}"}
         headers = {
             'content-type': 'application/json',
