@@ -97,7 +97,7 @@ class ResendActivationEmail(Resource):
 
         if not user:
             return {
-                "message": USER_NOT_FOUND
+                "message": get_text('confirmation_user_not_found')
             }, 404
 
         try:
