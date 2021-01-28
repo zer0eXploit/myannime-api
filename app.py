@@ -11,7 +11,6 @@ from werkzeug.utils import secure_filename
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_redis import FlaskRedis
 
 from db import db
 from ma import ma
