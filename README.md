@@ -15,8 +15,13 @@ The full documentation of the API is available at the followig url:
 
 ## Running the server
 
+Prerequisites:
+
+- Please create an .env file with entires as in the .env.example file.
+- Install required dependencies.
+
 ```
-cmd: python3 -m venv your_vent # virturl env creation
+cmd: python3 -m venv your_venv # virturl env creation
 cmd: source your_venv/bin/activate  # activating the venv
 cmd: (your_venv) pip install requirements.txt
 cmd: (your_venv) python app.py
