@@ -8,6 +8,10 @@ from flask_uploads import configure_uploads, patch_request_class
 from flask_migrate import Migrate
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
+from werkzeug.middleware.proxy_fix import ProxyFix
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_redis import FlaskRedis
 
 from db import db
 from ma import ma
@@ -46,6 +50,29 @@ app.config.from_object("default_config")
 # i.e., swapping configs is easier
 app.config.from_envvar("APPLICATION_SETTINGS")
 
+num_proxies = os.environ.get("NUM_PROXIES", 0)
+
+app.wsgi_app = ProxyFix(app.wsgi_app, num_proxies=num_proxies)
+
+CORS(app)
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=["2/second"],
+    headers_enabled=True
+)
+migrate = Migrate(app, db)
+# only call these two lines after setting uploaded_images_dest config.
+patch_request_class(app, 10 * 1024 * 1024)  # 10MB upload limit
+configure_uploads(app, IMAGE_SET)
+#  end
+api = Api(app)
+jwt = JWTManager(app)
+
+
+def error_handler():
+    return app.config.get("DEFAULT_ERROR_MESSAGE")
+
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -57,16 +84,6 @@ def page_not_found(e):
     }
 
     return jsonify(response), 404
-
-
-CORS(app)
-migrate = Migrate(app, db)
-# only call these two lines after setting uploaded_images_dest config.
-patch_request_class(app, 10 * 1024 * 1024)  # 10MB upload limit
-configure_uploads(app, IMAGE_SET)
-#  end
-api = Api(app)
-jwt = JWTManager(app)
 
 
 @jwt.user_claims_loader
@@ -90,6 +107,7 @@ def user_identity_lookup(user):
 
 @app.route("/favicon.ico")
 def get():
+    print(get_remote_address())
     icon_path = os.path.join(app.root_path, "static/images")
     mimetype = "image/vnd.microsoft.icon"
     icon_name = "favicon.ico"
