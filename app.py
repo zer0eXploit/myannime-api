@@ -69,10 +69,6 @@ api = Api(app)
 jwt = JWTManager(app)
 
 
-def error_handler():
-    return app.config.get("DEFAULT_ERROR_MESSAGE")
-
-
 @app.errorhandler(404)
 def page_not_found(e):
     PATH = request.path
