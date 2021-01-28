@@ -49,7 +49,7 @@ app.config.from_object("default_config")
 # i.e., swapping configs is easier
 app.config.from_envvar("APPLICATION_SETTINGS")
 
-num_proxies = os.environ.get("NUM_PROXIES", 0)
+num_proxies = int(os.environ.get("NUM_PROXIES", 0))
 
 app.wsgi_app = ProxyFix(app.wsgi_app, num_proxies=num_proxies)
 
