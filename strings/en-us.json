@@ -1,6 +1,6 @@
 {
     "home_welcome" : "MyanNime welcomes you warmly, dear visitor. :)",
-    "frontend_uri" : "https://myanime-d5de4.web.app",
+    "frontend_uri" : "https://myannime.web.app/",
     "api_docs_uri": "https://documenter.getpostman.com/view/8103362/TW6tMAB1",
     
     "resource_not_found_1": "The requested resource is not found on this server.",
